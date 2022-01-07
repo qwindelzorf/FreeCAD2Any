@@ -17,55 +17,62 @@
 # 2021/08/12: 0.0.2: using python3 and trying to 'import FreeCAD' instead, somewhat works, incl. 3mj format
 # 2021/08/08: 0.0.1: start, doesn't work yet
 
-APPNAME = 'FreeCAD2Any'
-VERSION = '0.0.4'
+APPNAME = "FreeCAD2Any"
+VERSION = "0.0.4"
 
 import sys
 import re
 import os
 import json
 
-if not os.path.exists('/usr/lib/freecad'):   # -- we are installed not ordinary, but as a snap or so (what a pain)
-   # -- this is a hack, but there is no nice way to resolve this (we don't really know where FreeCAD really lives/is-installed)
-   if not 'LD_LIBRARY_PATH' in os.environ or not 'FreeCAD' in os.environ["LD_LIBRARY_PATH"]:
-      set = 0
-      for d in ['/usr/lib/freecad','/usr/local/lib/freecad']:     # -- ordinary installed?
-         if os.path.exists(d):
-            set = -1
-            break
-      if set >= 0:                                                # -- not ordinary installed, search as snap
-         for d in ['/snap/freecad/current','/snap/freecad/24','/snap/freecad/22','/snap/freecad/20','/snap/freecad/19']:
-            if not 'LD_LIBRARY_PATH' in os.environ: os.environ['LD_LIBRARY_PATH'] = ''
-            if os.path.exists(d+"/opt/local/FreeCAD-0.19/lib"):
-               os.environ["LD_LIBRARY_PATH"] += ":"+d+"/opt/local/FreeCAD-0.19/lib"
-               set = set+1
-            if os.path.exists(d+"/usr/lib/x86_64-linux-gnu/"):
-               os.environ["LD_LIBRARY_PATH"] += ":"+d+"/usr/lib/x86_64-linux-gnu"
-               set = set+1
-               if set >= 2:
-                  break
-      if set != -1:
-         if set >= 2:    
-            #os.environ["LD_LIBRARY_PATH"] += '/snap/freecad/22/opt/local/FreeCAD-0.19/lib/:/snap/freecad/22/usr/lib/x86_64-linux-gnu/'
-            #print(os.environ["LD_LIBRARY_PATH"])
-            try:
-               os.execv(sys.argv[0],sys.argv)         # -- recursive calling myself with LD_LIBRARY_PATH set
-            except Exception as e:
-               sys.exit('EXCEPTION: failed to execute under modified environment, '+e)
-         else:
-            print("ERR: didn't find FreeCAD installation locally or as snap, abort.")
-            sys.exit(-1)
+if not os.path.exists("/usr/lib/freecad"):  # -- we are installed not ordinary, but as a snap or so (what a pain)
+    # -- this is a hack, but there is no nice way to resolve this (we don't really know where FreeCAD really lives/is-installed)
+    if not "LD_LIBRARY_PATH" in os.environ or not "FreeCAD" in os.environ["LD_LIBRARY_PATH"]:
+        set = 0
+        for d in ["/usr/lib/freecad", "/usr/local/lib/freecad"]:  # -- ordinary installed?
+            if os.path.exists(d):
+                set = -1
+                break
+        if set >= 0:  # -- not ordinary installed, search as snap
+            for d in [
+                "/snap/freecad/current",
+                "/snap/freecad/24",
+                "/snap/freecad/22",
+                "/snap/freecad/20",
+                "/snap/freecad/19",
+            ]:
+                if not "LD_LIBRARY_PATH" in os.environ:
+                    os.environ["LD_LIBRARY_PATH"] = ""
+                if os.path.exists(d + "/opt/local/FreeCAD-0.19/lib"):
+                    os.environ["LD_LIBRARY_PATH"] += ":" + d + "/opt/local/FreeCAD-0.19/lib"
+                    set = set + 1
+                if os.path.exists(d + "/usr/lib/x86_64-linux-gnu/"):
+                    os.environ["LD_LIBRARY_PATH"] += ":" + d + "/usr/lib/x86_64-linux-gnu"
+                    set = set + 1
+                    if set >= 2:
+                        break
+        if set != -1:
+            if set >= 2:
+                # os.environ["LD_LIBRARY_PATH"] += '/snap/freecad/22/opt/local/FreeCAD-0.19/lib/:/snap/freecad/22/usr/lib/x86_64-linux-gnu/'
+                # print(os.environ["LD_LIBRARY_PATH"])
+                try:
+                    os.execv(sys.argv[0], sys.argv)  # -- recursive calling myself with LD_LIBRARY_PATH set
+                except Exception as e:
+                    sys.exit("EXCEPTION: failed to execute under modified environment, " + e)
+            else:
+                print("ERR: didn't find FreeCAD installation locally or as snap, abort.")
+                # sys.exit(-1)
 
-FREECADPATH = ''
+FREECADPATH = ""
 
-if 'LD_LIBRARY_PATH' in os.environ:
-   for d in ['/snap/freecad/current','/snap/freecad/24','/snap/freecad/22','/snap/freecad/20','/snap/freecad/19']:
-      if os.path.exists(d+"/opt/local/FreeCAD-0.19/lib"):
-         FREECADPATH = d+"/opt/local/FreeCAD-0.19/lib"
+if "LD_LIBRARY_PATH" in os.environ:
+    for d in ["/snap/freecad/current", "/snap/freecad/24", "/snap/freecad/22", "/snap/freecad/20", "/snap/freecad/19"]:
+        if os.path.exists(d + "/opt/local/FreeCAD-0.19/lib"):
+            FREECADPATH = d + "/opt/local/FreeCAD-0.19/lib"
 else:
-   for d in ['/usr/lib/freecad','/usr/local/lib/freecad']:
-      if os.path.exists(d+"/lib"):
-         FREECADPATH = d+"/lib"
+    for d in ["/usr/lib/freecad", "/usr/local/lib/freecad"]:
+        if os.path.exists(d + "/lib"):
+            FREECADPATH = d + "/lib"
 
 sys.path.append(FREECADPATH)
 
@@ -73,181 +80,205 @@ import FreeCAD
 import Import
 import Part
 import Mesh
-import MeshPart            # 0.18.4 fails here, we need 0.19 at least
+import MeshPart  # 0.18.4 fails here, we need 0.19 at least
 
-def preg_match(rex,s,m,opts={}):
-   _m = re.search(rex,s)
-   m.clear()
-   if _m:
-      m.append(s)
-      m.extend(_m.groups())
-      return True
-   return False
+
+def preg_match(rex, s, m, opts={}):
+    _m = re.search(rex, s)
+    m.clear()
+    if _m:
+        m.append(s)
+        m.extend(_m.groups())
+        return True
+    return False
+
 
 def list_methods(obj):
-   return [method_name for method_name in dir(obj) if callable(getattr(obj, method_name))]
+    return [method_name for method_name in dir(obj) if callable(getattr(obj, method_name))]
 
-def export(fn,fno,fmt):
-   if not os.path.exists(fn):
-      sys.exit(f"ERR: '{fn}' not accessible, abort.")
-      
-   print("INF: importing %s ..." % fn)
-   if 0:
-      print("INF: loading",fn)
-      Part.open(fn)           # -- fails here
-      objects = FreeCAD.activeDocument().findObjects()
-      Mesh.export(objects,fno)
-      print(fno,"export done")
-      sys.exit(0)
 
-   result = FreeCAD.loadFile(fn)
-   obj = App.ActiveDocument.Objects
-   #print(list_methods(App.ActiveDocument))
-   #print(list_methods(FreeCAD))
-   #print(list_methods(App))
-   if fmt == 'fc' or fmt == 'fcstd' or fmt == 'FCStd': # or fmt == 'png' or fmt == 'jpg': # -- saveAs "cube.png" saves "cube.png.FCStd"
-      print("INF: => exporting (%s) %s" % (fmt,fno))
-      if os.path.exists(fno):
-         os.remove(fno)                   # -- make sure it's removed if it exists
-      App.ActiveDocument.saveAs(fno)
-      return 0
-   elif 0 and fmt == 'png' or fmt == 'jpg':     # -- future: see https://wiki.freecadweb.org/Std_ViewScreenShot (requires 'Gui')
-      print("INF: => exporting (%s) %s" % (fmt,fno))
-      if os.path.exists(fno):
-         os.remove(fno)                   # -- make sure it's removed if it exists
-      App.ActiveDocument.ActiveView.saveImage(fno,1024,1024,'Current')
-      return 0
-   
-   if(conf['verbose'] > 1):
-      print("INF: import result",result)
+def export(fn, fno, fmt):
+    if not os.path.exists(fn):
+        sys.exit(f"ERR: '{fn}' not accessible, abort.")
 
-   for o in App.ActiveDocument.Objects:
-      # find root object and export the shape
-      if len(o.InList)==0:
-         print("INF: => exporting (%s) %s" % (fmt,fno))
-         #print(list_methods(o))
-         if fmt=="step":   
-            o.Shape.exportStep(fno)
-         elif fmt=="iges": 
-            o.Shape.exportIges(fno)
-         elif fmt=="stl":
-            o.Shape.exportStl(fno)
-         elif fmt=="brep":
-            o.Shape.exportBrep(fno)
-         #elif fmt=="png":
-         #   o.Shape.exportPng(fno)             # -- doesn't exist
-         else:
-            exportMesh(o,fno,fmt)
-         return 0
-      #Mesh.export(result,fno)
-   print("ERR: no root object found to export");
-   return -1
+    print("INF: importing %s ..." % fn)
+    if 0:
+        print("INF: loading", fn)
+        Part.open(fn)  # -- fails here
+        objects = FreeCAD.activeDocument().findObjects()
+        Mesh.export(objects, fno)
+        print(fno, "export done")
+        sys.exit(0)
 
-def exportMesh(shape,fno,fmt):
-   mesh = MeshPart.meshFromShape(Shape=shape.Shape, Segments=True, LinearDeflection=0.1)
-   if(fmt=="3mj"):
-      export3MJ(mesh,fno)              # -- dedicated export
-   else:
-      Mesh.export([shape],fno)         # -- using built-in Mesh.export
-   return
+    result = FreeCAD.loadFile(fn)
+    obj = App.ActiveDocument.Objects
+    # print(list_methods(App.ActiveDocument))
+    # print(list_methods(FreeCAD))
+    # print(list_methods(App))
+    if (
+        fmt == "fc" or fmt == "fcstd" or fmt == "FCStd"
+    ):  # or fmt == 'png' or fmt == 'jpg': # -- saveAs "cube.png" saves "cube.png.FCStd"
+        print("INF: => exporting (%s) %s" % (fmt, fno))
+        if os.path.exists(fno):
+            os.remove(fno)  # -- make sure it's removed if it exists
+        App.ActiveDocument.saveAs(fno)
+        return 0
+    elif (
+        0 and fmt == "png" or fmt == "jpg"
+    ):  # -- future: see https://wiki.freecadweb.org/Std_ViewScreenShot (requires 'Gui')
+        print("INF: => exporting (%s) %s" % (fmt, fno))
+        if os.path.exists(fno):
+            os.remove(fno)  # -- make sure it's removed if it exists
+        App.ActiveDocument.ActiveView.saveImage(fno, 1024, 1024, "Current")
+        return 0
 
-def getIndices(shape,offset):       # -- taken from https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/Arch/importOBJ.py with adjustments to return actual arrays not strings
+    if conf["verbose"] > 1:
+        print("INF: import result", result)
+
+    for o in App.ActiveDocument.Objects:
+        # find root object and export the shape
+        if len(o.InList) == 0:
+            print("INF: => exporting (%s) %s" % (fmt, fno))
+            # print(list_methods(o))
+            if fmt == "step":
+                o.Shape.exportStep(fno)
+            elif fmt == "iges":
+                o.Shape.exportIges(fno)
+            elif fmt == "stl":
+                o.Shape.exportStl(fno)
+            elif fmt == "brep":
+                o.Shape.exportBrep(fno)
+            # elif fmt=="png":
+            #   o.Shape.exportPng(fno)             # -- doesn't exist
+            else:
+                exportMesh(o, fno, fmt)
+            return 0
+        # Mesh.export(result,fno)
+    print("ERR: no root object found to export")
+    return -1
+
+
+def exportMesh(shape, fno, fmt):
+    mesh = MeshPart.meshFromShape(Shape=shape.Shape, Segments=True, LinearDeflection=0.1)
+    if fmt == "3mj":
+        export3MJ(mesh, fno)  # -- dedicated export
+    else:
+        Mesh.export([shape], fno)  # -- using built-in Mesh.export
+    return
+
+
+def getIndices(
+    shape, offset
+):  # -- taken from https://github.com/FreeCAD/FreeCAD/blob/master/src/Mod/Arch/importOBJ.py with adjustments to return actual arrays not strings
     p = 4
     vlist = []
     elist = []
     flist = []
     curves = None
-    if isinstance(shape,Part.Shape):
+    if isinstance(shape, Part.Shape):
         for e in shape.Edges:
             try:
-                if not isinstance(e.Curve,Part.LineSegment):
+                if not isinstance(e.Curve, Part.LineSegment):
                     if not curves:
                         curves = shape.tessellate(1)
-                        FreeCAD.Console.PrintWarning(translate("Arch","Found a shape containing curves, triangulating").decode('utf8')+"\n")
+                        FreeCAD.Console.PrintWarning(
+                            translate("Arch", "Found a shape containing curves, triangulating").decode("utf8") + "\n"
+                        )
                         break
-            except: # unimplemented curve type
+            except:  # unimplemented curve type
                 curves = shape.tessellate(1)
-                FreeCAD.Console.PrintWarning(translate("Arch","Found a shape containing curves, triangulating").decode('utf8')+"\n")
+                FreeCAD.Console.PrintWarning(
+                    translate("Arch", "Found a shape containing curves, triangulating").decode("utf8") + "\n"
+                )
                 break
-    elif isinstance(shape,Mesh.Mesh):
+    elif isinstance(shape, Mesh.Mesh):
         curves = shape.Topology
     if curves:
         for v in curves[0]:
-            vlist.append([round(v.x,p),round(v.y,p),round(v.z,p)])
+            vlist.append([round(v.x, p), round(v.y, p), round(v.z, p)])
         for f in curves[1]:
-            fi = [ ]
+            fi = []
             for vi in f:
                 fi.append(vi + offset)
             flist.append(fi)
     else:
         for v in shape.Vertexes:
-            vlist.append([round(v.X,p),round(v.Y,p),round(v.Z,p)])
+            vlist.append([round(v.X, p), round(v.Y, p), round(v.Z, p)])
         if not shape.Faces:
             for e in shape.Edges:
                 if DraftGeomUtils.geomType(e) == "Line":
-                    ei = [ ]
-                    ei.append(findVert(e.Vertexes[0],shape.Vertexes) + offset)
-                    ei.append(findVert(e.Vertexes[-1],shape.Vertexes) + offset)
+                    ei = []
+                    ei.append(findVert(e.Vertexes[0], shape.Vertexes) + offset)
+                    ei.append(findVert(e.Vertexes[-1], shape.Vertexes) + offset)
                     elist.append(ei)
         for f in shape.Faces:
             if len(f.Wires) > 1:
                 # if we have holes, we triangulate
                 tris = f.tessellate(1)
                 for fdata in tris[1]:
-                    fi = [ ]
+                    fi = []
                     for vi in fdata:
                         vdata = Part.Vertex(tris[0][vi])
-                        fi.append(findVert(vdata,shape.Vertexes) + offset)
+                        fi.append(findVert(vdata, shape.Vertexes) + offset)
                     flist.append(fi)
             else:
-                fi = [ ]
+                fi = []
                 for e in f.OuterWire.OrderedEdges:
-                    #print(e.Vertexes[0].Point,e.Vertexes[1].Point)
+                    # print(e.Vertexes[0].Point,e.Vertexes[1].Point)
                     v = e.Vertexes[0]
-                    ind = findVert(v,shape.Vertexes)
+                    ind = findVert(v, shape.Vertexes)
                     if ind == None:
-                        return None,None,None
+                        return None, None, None
                     fi.append(ind + offset)
                 flist.append(fi)
-    return vlist,elist,flist
+    return vlist, elist, flist
 
-def export3MJ(shape,fno):
-   vl,el,fl = getIndices(shape,0)
-   #print(vl,fl)
-   g = { "format": "3MJ/1.0", "vertices": [ ], "volumes": [ ] }
-   for v in vl:
-      g['vertices'].append({"c": v})
-   v = [ ]
-   for f in fl:
-      v.append({"v": f})
-   g["volumes"].append({"triangles": v})
-   writeFile(fno,toJSON(g))
+
+def export3MJ(shape, fno):
+    vl, el, fl = getIndices(shape, 0)
+    # print(vl,fl)
+    g = {"format": "3MJ/1.0", "vertices": [], "volumes": []}
+    for v in vl:
+        g["vertices"].append({"c": v})
+    v = []
+    for f in fl:
+        v.append({"v": f})
+    g["volumes"].append({"triangles": v})
+    writeFile(fno, toJSON(g))
+
 
 def fromJSON(s):
-   return json.loads(s)
+    return json.loads(s)
 
-def toJSON(s,opts={}):
-   return json.dumps(s,sort_keys=True,indent=3) if 'pretty' in opts else json.dumps(s)
 
-def readFile(fn,opts={}):
-   h = open(fn,'r')
-   c = h.read()
-   h.close()
-   return c
+def toJSON(s, opts={}):
+    return json.dumps(s, sort_keys=True, indent=3) if "pretty" in opts else json.dumps(s)
 
-def writeFile(fn,d):
-   h = open(fn,'wb')
-   h.write(d.encode())
-   h.close()
+
+def readFile(fn, opts={}):
+    h = open(fn, "r")
+    c = h.read()
+    h.close()
+    return c
+
+
+def writeFile(fn, d):
+    h = open(fn, "wb")
+    h.write(d.encode())
+    h.close()
+
 
 def readJSON(fn):
-   return fromJSON(readFile(fn))
+    return fromJSON(readFile(fn))
 
-def writeJSON(fn,d,opts={}):
-   writeFile(fn,toJSON(d,opts))
+
+def writeJSON(fn, d, opts={}):
+    writeFile(fn, toJSON(d, opts))
+
 
 def help():
-   print(f"""{APPNAME} {VERSION} USAGE: [<options>] [file.FCStd ...]
+    print(
+        f"""{APPNAME} {VERSION} USAGE: [<options>] [file.FCStd ...]
    using FreeCAD {FREECADPATH}
    
    options:
@@ -267,64 +298,86 @@ def help():
       freecad2any -f step Cube.FCStd
       freecad2any -o cube.step Cube.FCStd
       freecad2step Cube.FCStd
-""" % (", ".join(fmts.keys()) ))
+"""
+        % (", ".join(fmts.keys()))
+    )
 
-if __name__ != "__main__":       # -- we are not a script (as it should be)
-   print("ERR: use freecad2any as a standalone app, abort.")
-   sys.exit(0)
 
-s2l = { 'o': 'output', 'v': 'verbose', 'f': 'format' }      # -- short keys
-a2a = { 'o': 1, 'f': 1 }                     # -- additional argument
-conf = { 'format': 'stl', 'verbose': 0 }     # -- defaults
-fs = [ ]
-fmts = { "iges": 1, "step": 1, "brep": 1, "obj": 1, "stl": 1, "amf": 1, "3mj": 1, 
-   "vrml": 1, "wrl": 1, "bdf": 1, "brep": 1, "brp": 1, "cnc": 1, "glb": 1, 
-   "gltf": 1, "med": 1, "off": 1, "ply": 1, "pov": 1, "scad": 1, "x3d": 1 }
+if __name__ != "__main__":  # -- we are not a script (as it should be)
+    print("ERR: use freecad2any as a standalone app, abort.")
+    sys.exit(0)
+
+s2l = {"o": "output", "v": "verbose", "f": "format"}  # -- short keys
+a2a = {"o": 1, "f": 1}  # -- additional argument
+conf = {"format": "stl", "verbose": 0}  # -- defaults
+fs = []
+fmts = {
+    "iges": 1,
+    "step": 1,
+    "brep": 1,
+    "obj": 1,
+    "stl": 1,
+    "amf": 1,
+    "3mj": 1,
+    "vrml": 1,
+    "wrl": 1,
+    "bdf": 1,
+    "brep": 1,
+    "brp": 1,
+    "cnc": 1,
+    "glb": 1,
+    "gltf": 1,
+    "med": 1,
+    "off": 1,
+    "ply": 1,
+    "pov": 1,
+    "scad": 1,
+    "x3d": 1,
+}
 
 m = []
-if(preg_match(r'freecad2(\w+)',sys.argv[0],m) and m[1] != 'any'):       # -- are we running as freecad2<fmt>?
-   conf['format'] = m[1]
+if preg_match(r"freecad2(\w+)", sys.argv[0], m) and m[1] != "any":  # -- are we running as freecad2<fmt>?
+    conf["format"] = m[1]
 
 i = 1
-while(i<len(sys.argv)):                                      # -- preparse all arguments
-   m = []
-   fn = sys.argv[i]
-   if(preg_match(r'^-(\w+)$',fn,m)):                         # -<k>
-      for ks in list(m[1]):
-         if(ks in s2l):
-            k = s2l[ks]
-            if(ks in a2a):
-               conf[k] = sys.argv[i+1]
-               i = i+1
-            else:      
-               conf[k] = conf[k]+1 if k in conf else 1
-         else:
-            print(f'ERR: unknown switch <-%s>, ignored' % ks)
-   elif(preg_match(r'^--(\w+)$',fn,m)):                     # --<k>
-      conf[m[1]] = conf[m[1]]+1 if m[1] in conf else 1
-   elif(preg_match(r'^--(\w+)=(.*)$',fn,m)):                # --<k>=<v>
-      conf[m[1]] = m[2]
-   else:                                                    # -- anything else is a file to process
-      fs.append(fn)
-   i = i+1
+while i < len(sys.argv):  # -- preparse all arguments
+    m = []
+    fn = sys.argv[i]
+    if preg_match(r"^-(\w+)$", fn, m):  # -<k>
+        for ks in list(m[1]):
+            if ks in s2l:
+                k = s2l[ks]
+                if ks in a2a:
+                    conf[k] = sys.argv[i + 1]
+                    i = i + 1
+                else:
+                    conf[k] = conf[k] + 1 if k in conf else 1
+            else:
+                print(f"ERR: unknown switch <-%s>, ignored" % ks)
+    elif preg_match(r"^--(\w+)$", fn, m):  # --<k>
+        conf[m[1]] = conf[m[1]] + 1 if m[1] in conf else 1
+    elif preg_match(r"^--(\w+)=(.*)$", fn, m):  # --<k>=<v>
+        conf[m[1]] = m[2]
+    else:  # -- anything else is a file to process
+        fs.append(fn)
+    i = i + 1
 
-if 'version' in conf:
-   print("%s %s (%s)" % (APPNAME, VERSION, FREECADPATH))
-   sys.exit(0)
-   
-if len(fs) <= 0 or 'help' in conf:
-   help()
+if "version" in conf:
+    print("%s %s (%s)" % (APPNAME, VERSION, FREECADPATH))
+    sys.exit(0)
 
-fmt = conf['format']
+if len(fs) <= 0 or "help" in conf:
+    help()
+
+fmt = conf["format"]
 
 for fn in fs:
-   fno = re.sub(r'.(\w+)$','.'+fmt,fn)
-   if 'output' in conf:
-      fno = conf['output'] 
-      m = []
-      if preg_match(r'\.(\w+)',fno,m):
-         fmt = m[1]
-      else:
-         sys.exit('ERR: bad filename <%s>, cannot derive format from it, abort.' % (fno))
-   export(fn,fno,fmt)
-
+    fno = re.sub(r".(\w+)$", "." + fmt, fn)
+    if "output" in conf:
+        fno = conf["output"]
+        m = []
+        if preg_match(r"\.(\w+)", fno, m):
+            fmt = m[1]
+        else:
+            sys.exit("ERR: bad filename <%s>, cannot derive format from it, abort." % (fno))
+    export(fn, fno, fmt)
