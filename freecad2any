@@ -149,7 +149,7 @@ def export(fn, fno, fmt):
 
     for o in App.ActiveDocument.Objects:
         # find root object and export the shape
-        if len(o.InList) == 0:
+        if hasattr(o, "Shape") and len(o.InList) == 0:
             print("INF: => exporting (%s) %s" % (fmt, fno))
             # print(list_methods(o))
             if fmt == "step":
